@@ -1,58 +1,8 @@
 import socket
-import json
-import struct
-import platform
+from protocol import send_packet,process_packet
+from config import HOST,PORT,DEFAULT_MODULE,SOCKET_TIMEOUT
+from handlers import build_handlers,dispatch_data
 
-HOST = '127.0.0.1'
-PORT = 6500
-
-system_info = {
-      "hostname":socket.gethostname(),
-      "platform":platform.system(),
-            "release":platform.release()
-}
-
-def send_message(module_type,message):
-
-      packet = {"module":"TEXT","payload":message}
-
-      payload = json.dumps(packet).encode('utf-8')
-
-      packet_length = len(payload)
-      header = struct.pack("!I",packet_length)
-
-      conn.sendall(header + payload)
-
-def recv_exact(sock,size):
-      data = b""
-
-      while len(data) < size:
-            chunk = sock.recv(size - len(data))
-
-            if not chunk:
-                  return None
-
-            data += chunk
-
-      return data
-
-def text_handler(packet):
-                  
-      payload = packet.get("payload")
-      print(f"Response: {payload}")
-
-def system_handler(packet):
-      print("Client System info")
-      hostname = system_info.get("hostname")
-      platform = system_info.get("platform")
-      release = system_info.get("release")
-
-      print(f"Hostname: {hostname}",f"Platform: {platform}",f"Release: {release}")      
-
-modules = {
-      "TEXT":text_handler,
-      "SYSTEM":system_handler
-}
 
 with socket.socket(socket.AF_INET,socket.SOCK_STREAM) as s :
       s.bind((HOST , PORT))
@@ -62,38 +12,31 @@ with socket.socket(socket.AF_INET,socket.SOCK_STREAM) as s :
       while True:
             conn,addr = s.accept()
             with conn:
+                  conn.settimeout(SOCKET_TIMEOUT)
                   print(f"Connected by {addr}")
 
-                  module_to_be_used = input("module: ")
+                  module_to_be_used = DEFAULT_MODULE
 
                   while True:
-                              header = recv_exact(conn,4)
+                              try:
+                                    data = process_packet(conn)
 
-                              if header is None:
-                                    print("No header was found")
-                                    conn.close()
-
-                              length = struct.unpack("!I",header)[0]
-
-                              MAX_PACKET_LENGTH = 1024 * 1024
-
-                              if length >  MAX_PACKET_LENGTH:
-                                    print("packet length too large ")
-                                    conn.close()
+                              except socket.timeout:
+                                    print("Connection timed out")
                                     break
 
-                              payload = recv_exact(conn,length)
+                              except (ValueError,TypeError) as e:
+                                    print(f"Invalid packet: {e}")
+                                    break
 
-                              data = json.loads(payload.decode('utf-8'))
+                              except ConnectionError as e:
+                                    print(f"Connection error: {e}")
+                                    break
 
-                              module_name = data.get("module")
+                              if data is None:
+                                    break
 
-                              handler = modules.get(module_name)
-
-                              if handler:
-                                    handler(data)
-                              else:
-                                    print("unknown module")
+                              dispatch_data(data)
             
                               message = input("> ")
 
@@ -102,4 +45,21 @@ with socket.socket(socket.AF_INET,socket.SOCK_STREAM) as s :
                                     print(f"switched to {module_to_be_used}")
                                     continue
 
-                              send_message(module_to_be_used,message)
+                              builder = build_handlers.get(module_to_be_used)
+                                                            
+                              if builder is None:
+                                    print("Unknown module")
+                                    continue
+                                                            
+                              packet = builder(message)            
+                                                            
+                              try:
+                                    send_packet(conn, packet)
+
+                              except socket.timeout:
+                                    print("Connection timed out while sending")
+                                    break
+
+                              except ConnectionError as e:
+                                    print(f"Connection error while sending: {e}")
+                                    break

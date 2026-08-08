@@ -1,51 +1,65 @@
 import socket
-import json
+from protocol import send_packet,process_packet
+from config import HOST,PORT,DEFAULT_MODULE,SOCKET_TIMEOUT
+from handlers import build_handlers,dispatch_data
 
-HOST = '127.0.0.1'
-PORT = 6500
 
 with socket.socket(socket.AF_INET,socket.SOCK_STREAM) as s :
-    s.bind((HOST , PORT))
-    s.listen()
-    print(f"Server is listening on {HOST}:{PORT}")
+      s.bind((HOST , PORT))
+      s.listen()
+      print(f"Server is listening on {HOST}:{PORT}")
 
-    while True:
-        conn,addr = s.accept()
-        with conn:
-            print(f"Connected by {addr}")
+      while True:
+            conn,addr = s.accept()
+            with conn:
+                  conn.settimeout(SOCKET_TIMEOUT)
+                  print(f"Connected by {addr}")
 
-            while True:
-                    try:
+                  module_to_be_used = DEFAULT_MODULE
 
-                        data = conn.recv(1024)
+                  while True:
+                              try:
+                                    data = process_packet(conn)
 
-                        if not data:
-                            break
+                              except socket.timeout:
+                                    print("Connection timed out")
+                                    break
 
-                        response = json.loads(data.decode('utf-8'))
-                        module = response.get("module")
-             
-                        if module == "TEXT":
+                              except (ValueError,TypeError) as e:
+                                    print(f"Invalid packet: {e}")
+                                    break
 
-                            payload = response.get("payload")
-                            print(f"Recieved: {payload}")
-                            
-                            message = input("Type your response here: ")
-                            packet = {"module":"TEXT","payload":message}
+                              except ConnectionError as e:
+                                    print(f"Connection error: {e}")
+                                    break
 
-                            conn.sendall((json.dumps(packet) + "\n").encode('utf-8'))
+                              if data is None:
+                                    break
 
-
-                        elif module is None:
-                            print("Packet missing module")
-                            continue
-
-                    except json.JSONDecodeError as e:
-                        print(f"Invalid JSON: {e}")
-                        continue
-
-                    except KeyError:
-                        print("Missing 'module' key in packet")       
-
-                
+                              dispatch_data(data)
             
+                              message = input("> ")
+
+                              if message.startswith("/module"):
+                                    module_to_be_used = message.split(maxsplit=1)[1]
+                                    print(f"switched to {module_to_be_used}")
+                                    continue
+
+                              builder = build_handlers.get(module_to_be_used)
+                                                            
+                              if builder is None:
+                                    print("Unknown module")
+                                    continue
+                                                            
+                              packet = builder(message)            
+                                                            
+                              try:
+                                    send_packet(conn, packet)
+
+                              except socket.timeout:
+                                    print("Connection timed out while sending")
+                                    break
+
+                              except ConnectionError as e:
+                                    print(f"Connection error while sending: {e}")
+                                    break

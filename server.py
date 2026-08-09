@@ -12,13 +12,13 @@ with socket.socket(socket.AF_INET,socket.SOCK_STREAM) as s :
 
       clients = []
 
-      try:
-            def handle_client(conn,addr):
-                  print(f"Connected by {addr}")
-                  print(f"Connected clients: {len(clients)}")
-                  conn.settimeout(SOCKET_TIMEOUT)
-                  module_to_be_used = DEFAULT_MODULE
-
+      
+      def handle_client(conn,addr):
+            print(f"Connected by {addr}")
+            print(f"Connected clients: {len(clients)}")
+            conn.settimeout(SOCKET_TIMEOUT)
+            module_to_be_used = DEFAULT_MODULE
+            try:
                   with conn:
                         while True:
                               try:
@@ -67,10 +67,10 @@ with socket.socket(socket.AF_INET,socket.SOCK_STREAM) as s :
                                     print(f"Connection error while sending: {e}")
                                     break
 
-      finally:
-            clients.remove(conn)
-            print(f"Disconnected: {addr}")
-            print(f"Connected clients: {len(clients)}")
+            finally:
+                  clients.remove(conn)
+                  print(f"Disconnected: {addr}")
+                  print(f"Connected clients: {len(clients)}")
 
       while True:
             conn,addr = s.accept()

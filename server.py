@@ -12,6 +12,11 @@ with socket.socket(socket.AF_INET,socket.SOCK_STREAM) as s :
 
       clients = []
 
+      def broadcast(packet,sender):
+            for client in clients:
+                  if client is not sender:
+                        send_packet(client,packet)
+
       
       def handle_client(conn,addr):
             print(f"Connected by {addr}")
@@ -40,32 +45,8 @@ with socket.socket(socket.AF_INET,socket.SOCK_STREAM) as s :
                                     break
                               
                               dispatch_data(data)
-                                          
-                              message = input("> ")
+                              broadcast(data,conn)
                               
-                              if message.startswith("/module"):
-                                    module_to_be_used = message.split(maxsplit=1)[1]
-                                    print(f"switched to {module_to_be_used}")
-                                    continue                        
-                              
-                              builder = build_handlers.get(module_to_be_used)
-                                                                                          
-                              if builder is None:
-                                    print("Unknown module")
-                                    continue
-                                                                                          
-                              packet = builder(message)            
-                                                                                          
-                              try:
-                                    send_packet(conn, packet)
-                              
-                              except socket.timeout:
-                                    print("Connection timed out while sending")
-                                    break
-                              
-                              except ConnectionError as e:
-                                    print(f"Connection error while sending: {e}")
-                                    break
 
             finally:
                   clients.remove(conn)

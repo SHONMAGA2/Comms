@@ -67,6 +67,11 @@ with socket.socket(socket.AF_INET,socket.SOCK_STREAM) as s :
                               print(f"Connection error while sending: {e}")
                               break
 
+                        finally:
+                              clients.remove(conn)
+                              print(f"Disconnected: {addr}")
+                              print(f"Connected clients: {len(clients)}")
+
       while True:
             conn,addr = s.accept()
             clients.append(conn)

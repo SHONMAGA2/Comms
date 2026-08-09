@@ -13,9 +13,14 @@ with socket.socket(socket.AF_INET,socket.SOCK_STREAM) as s :
       clients = []
 
       def broadcast(packet,sender):
-            for client in clients:
-                  if client is not sender:
-                        send_packet(client,packet)
+            for client in clients.copy():
+                  if client is sender:
+                        continue
+            try:
+                  send_packet(client,packet)
+            except ConnectionError:
+                  print("Could not send to client")
+
 
       
       def handle_client(conn,addr):
@@ -49,7 +54,9 @@ with socket.socket(socket.AF_INET,socket.SOCK_STREAM) as s :
                               
 
             finally:
-                  clients.remove(conn)
+                  if conn in clients:
+                        clients.remove(conn)
+
                   print(f"Disconnected: {addr}")
                   print(f"Connected clients: {len(clients)}")
 

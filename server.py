@@ -14,7 +14,7 @@ with socket.socket(socket.AF_INET,socket.SOCK_STREAM) as s :
 
       def broadcast(packet,sender):
             for client in clients.copy():
-                  if client is sender:
+                  if client is not sender:
                         continue
             try:
                   send_packet(client,packet)

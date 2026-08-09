@@ -7,6 +7,8 @@ system_info = {
     "release":platform.release()
 }
 
+SERVER_HOST = '192.168.0.107'
+SERVER_PORT = 6500
 MAX_PACKET_LENGTH = 1024 * 1024
 PROTOCOL_VERSION = 1
 HEADER_SIZE = 4

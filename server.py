@@ -1,6 +1,6 @@
 import socket
 from protocol import send_packet,process_packet
-from config import HOST,PORT,DEFAULT_MODULE,SOCKET_TIMEOUT
+from server_config import HOST,PORT,DEFAULT_MODULE,SOCKET_TIMEOUT
 from handlers import build_handlers,dispatch_data
 
 

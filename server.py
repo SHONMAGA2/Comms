@@ -13,7 +13,7 @@ with socket.socket(socket.AF_INET,socket.SOCK_STREAM) as s :
       clients = []
 
       def broadcast(packet,sender):
-            for client in clients.copy():
+            for client in clients:
                   if client is not sender:
                         continue
             try:

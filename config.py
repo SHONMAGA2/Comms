@@ -13,5 +13,5 @@ MAX_PACKET_LENGTH = 1024 * 1024
 PROTOCOL_VERSION = 1
 HEADER_SIZE = 4
 DEFAULT_MODULE = "TEXT"
-current_modules = ["TEXT","SYSTEM"]
+current_modules = ["TEXT","SYSTEM","AUTH"]
 

@@ -1,14 +1,12 @@
 import socket
 from protocol import send_packet,receive_packet
-from config import HOST,PORT,DEFAULT_MODULE,SOCKET_TIMEOUT
+from config import HOST,PORT,DEFAULT_MODULE
 from handlers import build_handlers,dispatch_data
 import threading
 
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
     try:
-
         s.connect((HOST,PORT))
-        s.settimeout(SOCKET_TIMEOUT)
 
         module_to_be_used = DEFAULT_MODULE
         def receiver_thread(sock):
@@ -45,9 +43,6 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
 
     except ConnectionRefusedError:
         print("Server not listening")
-
-    except socket.timeout:
-        print("Connection timed out")
 
     except ConnectionError as e:
         print(f"Connection error: {e}")

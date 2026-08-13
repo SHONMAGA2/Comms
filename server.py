@@ -1,6 +1,6 @@
 import socket
 from protocol import send_packet,process_packet
-from config import HOST,PORT,SOCKET_TIMEOUT
+from config import HOST,PORT
 from handlers import dispatch_data,routing,clients
 import threading
 
@@ -11,16 +11,11 @@ with socket.socket(socket.AF_INET,socket.SOCK_STREAM) as s :
 
       def client_thread(conn,addr):
             with conn:
-                  conn.settimeout(SOCKET_TIMEOUT)
                   print(f"Connected by {addr}")
 
                   while True:
                               try:
                                     data = process_packet(conn)
-
-                              except socket.timeout:
-                                    print("Connection timed out")
-                                    break
 
                               except (ValueError,TypeError) as e:
                                     print(f"Invalid packet: {e}")

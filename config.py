@@ -7,7 +7,7 @@ system_info = {
     "release":platform.release()
 }
 
-HOST = '127.0.0.1'
+HOST = '192.168.0.107'
 PORT = 6500
 MAX_PACKET_LENGTH = 1024 * 1024
 PROTOCOL_VERSION = 1

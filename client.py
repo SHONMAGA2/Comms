@@ -1,7 +1,8 @@
 import socket
 from protocol import send_packet,receive_packet
 from config import HOST,PORT,DEFAULT_MODULE,SOCKET_TIMEOUT
-from handlers import build_handlers,receive_handlers
+from handlers import build_handlers,dispatch_data
+import threading
 
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
     try:
@@ -10,52 +11,36 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.settimeout(SOCKET_TIMEOUT)
 
         module_to_be_used = DEFAULT_MODULE
+        def receiver_thread(sock):
+            while True:
+                data = receive_packet(sock)
+
+                if data is None:
+                    print("server connection closed")
+                    break
+
+                dispatch_data(data)
+
+        thread = threading.Thread(
+            target=receiver_thread,
+            args=(s,)
+        )
+
+        thread.start()
+
+                
         while True:
 
-            message = input("> ")
-
-            if message.startswith("/module"):
-                module_to_be_used = message.split(maxsplit=1)[1]
-                print(f"switched to {module_to_be_used}")
-
-
-                if module_to_be_used == "SYSTEM":
-                    builder = build_handlers.get("SYSTEM")
-
-                if builder is None:
-                    print("Unknown module")
-                    continue
-
-                packet = builder()
-                send_packet(s,packet)
-
-                continue
-
-            builder = build_handlers.get(module_to_be_used)
-
-            if builder is None:
-                print("Unknown module")
-                continue
-
-            packet = builder(message)            
-
+            username = input("Type your Username: ")
+            auth_builder = build_handlers.get("AUTH")
+            packet = auth_builder(username)
             send_packet(s,packet)
-            
-            data = receive_packet(s)
 
-            if data is None:
-                print("server connection closed ")
-                break
+            message = input("> ")
+            builder = build_handlers.get(module_to_be_used)
+            packet = builder(message)
+            send_packet(s,packet)
 
-            module_name = data.get("module")
-
-            handler = receive_handlers.get(module_name)
-
-            if handler is None:
-                print("Unknown module")
-                continue
-
-            handler(data)
 
 
     except ConnectionRefusedError:

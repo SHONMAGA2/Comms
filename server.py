@@ -28,7 +28,9 @@ with socket.socket(socket.AF_INET,socket.SOCK_STREAM) as s :
                               if data is None:
                                     break
 
+                              print(f"RECEIVED: {data}")
                               dispatch_data(conn,data)
+                              
                               
 
                               

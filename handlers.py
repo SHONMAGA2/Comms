@@ -126,6 +126,9 @@ def dispatch_data(conn,data):
 
         system_handle(data)
 
+    elif module_name == "SYSTEM" and data_type == "CLIENT_LIST":
+        client_list_handle(conn)
+
     elif module_name == "AUTH":
         auth_handle = receive_handlers["AUTH"]
         auth_handle(conn,data)

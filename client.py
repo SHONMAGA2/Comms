@@ -16,23 +16,32 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         def receiver_thread(sock):
             while True:
                 data = receive_packet(sock)
-                print("CLIENT RECEIVED:", data)
+
 
                 if data is None:
                     print("server connection closed")
                     break
 
-                dispatch_data(sock,data)
+                print("CLIENT RECEIVED:", data)
 
-                if (
-                    data.get("module") == "SYSTEM"
-                    and data.get("type") == "CLIENT_LIST"
-                ):
+                module_name = data.get("module")
+                data_type = data.get("type")
+
+                if module_name == "TEXT" and data_type == "MESSAGE":
+                    print(f"{data.get("sender")}: {data.get("payload")}")
+
+                elif module_name == "SYSTEM" and data_type == "CLIENT_LIST":
                     with client_list_lock:
                         client_list.clear()
                         client_list.extend(data.get("payload", []))
 
                     client_list_ready.set()
+
+                elif module_name == "SYSTEM" and data_type == "ERROR":
+                    print(data.get("payload"))
+
+                else:
+                    print("Unknown packet type")
 
         thread = threading.Thread(
             target=receiver_thread,

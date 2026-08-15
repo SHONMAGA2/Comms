@@ -28,7 +28,9 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                 data_type = data.get("type")
 
                 if module_name == "TEXT" and data_type == "MESSAGE":
-                    print(f"{data.get("sender")}: {data.get("payload")}")
+                    sender = data.get("sender")
+                    payload = data.get("payload")
+                    print(f"{sender}: {payload}")
 
                 elif module_name == "SYSTEM" and data_type == "CLIENT_LIST":
                     with client_list_lock:
@@ -100,28 +102,20 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
 
                 recipient = users[choice - 1]
 
-                message = input(f"Message to {recipient} > ")
+                print(f"Now chatting with {recipient}")
+                print("Type /back to return to the user list")
 
-                text_builder = build_handlers.get("TEXT")
-                packet = text_builder(message,username,recipient)
-                send_packet(s,packet)
+                while True:
+                    message = input(f"Message to {recipient} > ")
 
+                    if message == "/break":
+                        break
+
+                    text_builder = build_handlers.get("TEXT")
+                    packet = text_builder(message,username,recipient)
+                    send_packet(s,packet)
 
                 continue
-
-
-
-
-            builder = build_handlers.get(module_to_be_used)
-
-            if builder is None:
-                print("Unknown module")
-                continue
-
-            packet = builder(message)
-            send_packet(s,packet)
-
-
 
     except ConnectionRefusedError:      
         print("Server not listening")

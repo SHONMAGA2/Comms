@@ -9,6 +9,8 @@ with socket.socket(socket.AF_INET,socket.SOCK_STREAM) as s :
       s.listen()
       print(f"Server is listening on {HOST}:{PORT}")
 
+      
+
       def client_thread(conn,addr):
             with conn:
                   print(f"Connected by {addr}")
@@ -26,6 +28,7 @@ with socket.socket(socket.AF_INET,socket.SOCK_STREAM) as s :
                                     break
 
                               if data is None:
+                                    remove_client(conn)
                                     break
 
                               print(f"RECEIVED: {data}")
@@ -41,6 +44,13 @@ with socket.socket(socket.AF_INET,socket.SOCK_STREAM) as s :
 
       while True:
             conn,addr = s.accept()
+
+            def remove_client(conn):
+                  for username, client_conn in clients.items():
+                        if client_conn == conn:
+                              del clients[username]
+                              print(f"{username} disconnected")
+                              return
 
             thread = threading.Thread(
                   target=client_thread,

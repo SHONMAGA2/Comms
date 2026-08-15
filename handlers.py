@@ -23,22 +23,38 @@ def system_handler(packet):
 
     print(f"Hostname: {hostname}","Platform: {platform}","Release: {release}")
 
-def receive_client_list(message):
-    for client in clients:
-        print(client)
-
+def client_list_handle(conn):
+    client_usernames = list(clients.keys())
+    print(f"Connected clients: {client_usernames}")
+    
+    send_packet(conn,client_usernames)
+    
 def auth_handler(conn,packet):
     client = packet.get("payload")
+
+    if client in clients:
+        print(f"Username already in use: {client}")
+        return False
+
     clients[client] = conn
 
     print(f"Authenticated client: {client}")
-    print(f"Connected clients: {list(clients.keys())}")
-
-    return clients
     
-def routing(clients,packet):
+def routing(conn,clients,packet):
     recipient_name = packet.get("recipient")
     recipient_conn = clients.get(recipient_name)
+
+    if recipient_conn is None:
+        error_packet = {
+            "version": PROTOCOL_VERSION,
+            "module": "SYSTEM",
+            "type": "ERROR",
+            "payload": f"{recipient_name} is offline"
+        }
+
+        send_packet(conn, error_packet)
+        return
+
     send_packet(recipient_conn,packet)
 
 # ==========================
@@ -78,7 +94,7 @@ def build_auth_packet(username):
 
 receive_handlers = {
         "TEXT":text_handler,
-        "SYSTEM":{"type":{"INFO":system_handler,"CLIENT_LIST":receive_client_list}},
+        "SYSTEM":{"type":{"INFO":system_handler,"CLIENT_LIST":client_list_handle}},
         "AUTH":auth_handler
     }
 
@@ -94,7 +110,7 @@ def dispatch_data(conn,data):
     data_type = data.get("type")
 
     if module_name == "TEXT" and data_type == "MESSAGE":
-        routing(clients,data)
+        routing(conn,clients,data)
 
     elif module_name == "SYSTEM" and data_type == "INFO":
         system_handle = receive_handlers["SYSTEM"]["type"]["INFO"]
@@ -102,13 +118,14 @@ def dispatch_data(conn,data):
         system_handle(data)
 
     elif module_name == "SYSTEM" and data_type == "CLIENT_LIST":
-        system_handle = receive_handlers["SYSTEM"]["type"]["CLIENT_LIST"]
-
-        system_handle(data)
+        client_list_handle(conn)
 
     elif module_name == "AUTH":
         auth_handle = receive_handlers["AUTH"]
         auth_handle(conn,data)
+
+    elif module_name == "SYSTEM" and data_type == "ERROR":
+        print(data.get("payload"))
 
     else:
         print("Unknown packet type")

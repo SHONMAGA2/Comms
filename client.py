@@ -9,6 +9,10 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.connect((HOST,PORT))
 
         module_to_be_used = DEFAULT_MODULE
+        client_list = []
+        client_list_lock = threading.Lock()
+        client_list_ready = threading.Event()
+
         def receiver_thread(sock):
             while True:
                 data = receive_packet(sock)
@@ -19,6 +23,16 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
 
                 dispatch_data(sock,data)
 
+                if (
+                    data.get("module") == "SYSTEM"
+                    and data.get("type") == "CLIENT_LIST"
+                ):
+                    with client_list_lock:
+                        client_list.clear()
+                        client_list.extend(data.get("payload", []))
+
+                    client_list_ready.set()
+
         thread = threading.Thread(
             target=receiver_thread,
             args=(s,)
@@ -26,24 +40,67 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
 
         thread.start()
 
+        username = input("Type your Username: ")
+        auth_builder = build_handlers.get("AUTH")
+        packet = auth_builder(username)
+        send_packet(s,packet)
                 
         while True:
-
-            username = input("Type your Username: ")
-            auth_builder = build_handlers.get("AUTH")
-            packet = auth_builder(username)
-            send_packet(s,packet)
-
             print("available commands: /conn -> list and select users you can talk to")
-
             message = input("> ")
-            
 
             if message.startswith("/conn"):
+
+                client_list_ready.clear()
+
                 client_list_builder = build_handlers["SYSTEM"]["type"]["CLIENT_LIST"]
                 packet = client_list_builder(message)
                 send_packet(s,packet)
+
+                if not client_list_ready.wait(timeout=5):
+                    print("Server did not respond with a client list")
+                    continue
+
+                with client_list_lock:
+                    users = list(client_list)
+
+                users = [
+                    user for user in users
+                    if user != username
+                ]
+
+                if not users:
+                    print("No other users are currently connected.")
+                    continue
+
+                print(f"Connected users: \n")
+
+                for number, user in enumerate(users,1):
+                    print(f"{number}. {user}")
+
+                try:
+                    choice = int(input("Select user > "))
+                except ValueError:
+                    print("please enter a number")
+                    continue
+
+                if choice < 1 or choice > len(users):
+                    print("Invalid selection")
+                    continue
+
+                recipient = users[choice - 1]
+
+                message = input(f"Message to {recipient} > ")
+
+                text_builder = build_handlers.get("TEXT")
+                packet = text_builder(message,username,recipient)
+                send_packet(s,packet)
+
+
                 continue
+
+
+
 
             builder = build_handlers.get(module_to_be_used)
 

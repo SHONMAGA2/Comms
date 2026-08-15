@@ -10,7 +10,8 @@ clients = {}
 def text_handler(packet):
 
     payload = packet.get("payload")
-    print(f"Response: {payload}")
+    message_sender = packet.get("sender")
+    print(f"{message_sender}: {payload}")
 
 
 def system_handler(packet):
@@ -26,8 +27,15 @@ def system_handler(packet):
 def client_list_handle(conn):
     client_usernames = list(clients.keys())
     print(f"Connected clients: {client_usernames}")
+
+    packet = {
+        "version": PROTOCOL_VERSION,
+        "module": "SYSTEM",
+        "type": "CLIENT_LIST",
+        "payload": client_usernames
+    }
     
-    send_packet(conn,client_usernames)
+    send_packet(conn,packet)
     
 def auth_handler(conn,packet):
     client = packet.get("payload")

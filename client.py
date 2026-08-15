@@ -17,7 +17,7 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                     print("server connection closed")
                     break
 
-                dispatch_data(data)
+                dispatch_data(sock,data)
 
         thread = threading.Thread(
             target=receiver_thread,
@@ -34,14 +34,29 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             packet = auth_builder(username)
             send_packet(s,packet)
 
+            print("available commands: /conn -> list and select users you can talk to")
+
             message = input("> ")
+            
+
+            if message.startswith("/conn"):
+                client_list_builder = build_handlers["SYSTEM"]["type"]["CLIENT_LIST"]
+                packet = client_list_builder(message)
+                send_packet(s,packet)
+                continue
+
             builder = build_handlers.get(module_to_be_used)
+
+            if builder is None:
+                print("Unknown module")
+                continue
+
             packet = builder(message)
             send_packet(s,packet)
 
 
 
-    except ConnectionRefusedError:
+    except ConnectionRefusedError:      
         print("Server not listening")
 
     except ConnectionError as e:

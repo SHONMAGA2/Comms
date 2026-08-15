@@ -30,6 +30,10 @@ def receive_client_list(message):
 def auth_handler(conn,packet):
     client = packet.get("payload")
     clients[client] = conn
+
+    print(f"Authenticated client: {client}")
+    print(f"Connected clients: {list(clients.keys())}")
+
     return clients
     
 def routing(clients,packet):

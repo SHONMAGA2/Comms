@@ -12,6 +12,7 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         client_list = []
         client_list_lock = threading.Lock()
         client_list_ready = threading.Event()
+        print_lock = threading.Lock()
 
         def receiver_thread(sock):
             while True:
@@ -22,15 +23,14 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                     print("server connection closed")
                     break
 
-                print("CLIENT RECEIVED:", data)
-
                 module_name = data.get("module")
                 data_type = data.get("type")
 
                 if module_name == "TEXT" and data_type == "MESSAGE":
                     sender = data.get("sender")
                     payload = data.get("payload")
-                    print(f"{sender}: {payload}")
+                    with print_lock:
+                        print(f"\n{sender}: {payload}")
 
                 elif module_name == "SYSTEM" and data_type == "CLIENT_LIST":
                     with client_list_lock:

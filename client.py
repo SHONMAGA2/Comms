@@ -16,6 +16,7 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         def receiver_thread(sock):
             while True:
                 data = receive_packet(sock)
+                print("CLIENT RECEIVED:", data)
 
                 if data is None:
                     print("server connection closed")

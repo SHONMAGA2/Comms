@@ -34,7 +34,8 @@ def client_list_handle(conn):
         "type": "CLIENT_LIST",
         "payload": client_usernames
     }
-    
+
+    print("SENDING:", packet)
     send_packet(conn,packet)
     
 def auth_handler(conn,packet):
